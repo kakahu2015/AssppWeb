@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import { config } from "./config.js";
 import { httpsRedirect } from "./middleware/httpsRedirect.js";
+import { securityHeaders } from "./middleware/securityHeaders.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { setupWsProxy } from "./services/wsProxy.js";
 import searchRoutes from "./routes/search.js";
@@ -17,6 +18,7 @@ const app = express();
 
 // Middleware
 app.use(httpsRedirect);
+app.use(securityHeaders);
 app.use(express.json({ limit: "50mb" }));
 
 // API routes

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { httpsRedirect } from "../src/middleware/httpsRedirect.js";
+import { securityHeaders } from "../src/middleware/securityHeaders.js";
 import type { Request, Response, NextFunction } from "express";
 
 function createMockReq(
@@ -99,5 +100,35 @@ describe("httpsRedirect middleware", () => {
 
     // Should use host header, not x-forwarded-host, to prevent open redirects
     expect(redirectUrl).toBe("https://internal.host/path");
+  });
+});
+
+describe("securityHeaders middleware", () => {
+  it("sets defensive HTTP response headers", () => {
+    const req = createMockReq({ host: "example.com" });
+    const headers = new Map<string, string>();
+    const res = {
+      setHeader: (name: string, value: string) => {
+        headers.set(name, value);
+        return res;
+      },
+    } as unknown as Response;
+
+    let nextCalled = false;
+    const next: NextFunction = () => {
+      nextCalled = true;
+    };
+
+    securityHeaders(req, res, next);
+
+    expect(nextCalled).toBe(true);
+    expect(headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(headers.get("X-Frame-Options")).toBe("DENY");
+    expect(headers.get("Referrer-Policy")).toBe("no-referrer");
+    expect(headers.get("Cross-Origin-Opener-Policy")).toBe("same-origin");
+    expect(headers.get("Cross-Origin-Resource-Policy")).toBe("same-origin");
+    expect(headers.get("Permissions-Policy")).toBe(
+      "geolocation=(), microphone=(), camera=()",
+    );
   });
 });
