@@ -1,5 +1,6 @@
 import express from "express";
 import { createServer } from "http";
+import compression from "compression";
 import path from "path";
 import fs from "fs";
 import { config } from "./config.js";
@@ -20,6 +21,7 @@ const app = express();
 // Middleware
 app.use(httpsRedirect);
 app.use(express.json({ limit: "50mb" }));
+app.use(compression({ threshold: 1024 }));
 
 // API routes
 app.use("/api", accessAuth);
@@ -60,8 +62,8 @@ setupWsProxy(server);
 // Ensure data directory exists
 fs.mkdirSync(config.dataDir, { recursive: true });
 
-server.listen(config.port, () => {
-  console.log(`Server listening on port ${config.port}`);
+server.listen(config.port, config.host, () => {
+  console.log(`Server listening on ${config.host}:${config.port}`);
   console.log(`Data directory: ${path.resolve(config.dataDir)}`);
 });
 

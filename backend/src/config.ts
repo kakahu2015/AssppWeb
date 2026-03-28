@@ -3,6 +3,7 @@ import { timingSafeEqual } from "crypto";
 
 export const config = {
   port: parseInt(process.env.PORT || "8080"),
+  host: process.env.HOST || "127.0.0.1",
   dataDir: process.env.DATA_DIR || "./data",
   publicBaseUrl: process.env.PUBLIC_BASE_URL || "",
   disableHttpsRedirect:
@@ -19,14 +20,23 @@ export const config = {
   accessPassword: process.env.ACCESS_PASSWORD || "",
 };
 
+/**
+ * Server stores double-hash: SHA-256(SHA-256(ACCESS_PASSWORD)).
+ * Client sends single-hash: SHA-256(password).
+ * Server verifies by hashing the received token once more.
+ * This ensures the intercepted client hash cannot be replayed.
+ */
 export const accessPasswordHash = config.accessPassword
-  ? createHash("sha256").update(config.accessPassword).digest("hex")
+  ? createHash("sha256")
+      .update(createHash("sha256").update(config.accessPassword).digest("hex"))
+      .digest("hex")
   : "";
 
-/** Timing-safe comparison of a client-supplied token against the precomputed hash. */
 export function verifyAccessToken(token: string): boolean {
-  const expected = Buffer.from(accessPasswordHash, "utf8");
-  const actual = Buffer.from(token, "utf8");
+  if (!accessPasswordHash || !token) return false;
+  const serverHash = createHash("sha256").update(token).digest("hex");
+  const expected = Buffer.from(serverHash, "utf8");
+  const actual = Buffer.from(accessPasswordHash, "utf8");
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 

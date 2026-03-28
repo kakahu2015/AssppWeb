@@ -137,3 +137,6 @@ references/
 mnt/
 tunnel/
 deploy.sh
+
+# Build output (generated from frontend/dist)
+backend/public/
